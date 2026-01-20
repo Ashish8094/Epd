@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Parking System</title>
+  <style>
+    body { font-family: Arial; text-align: center; }
+    .spot { width: 50px; height: 50px; margin: 5px; display: inline-block; border: 1px solid black; }
+    .free { background-color: green; }
+    .taken { background-color: red; }
+    button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Smart Parking System</h1>
+  <div id="parking-lot"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io('http://localhost:3000');  // Point to your Node server
+    const parkingLot = document.getElementById('parking-lot');
+
+    // Function to render spots
+    function renderSpots(spots) {
+      parkingLot.innerHTML = ''; // Clear old spots
+      spots.forEach((isFree, index) => {
+        const spotDiv = document.createElement('div');
+        spotDiv.className = `spot ${isFree ? 'free' : 'taken'}`;
+        spotDiv.innerHTML = `<p>Spot ${index}</p>`;
+        if (isFree) {
+          const button = document.createElement('button');
+          button.textContent = 'Book';
+          button.onclick = () => bookSpot(index);
+          spotDiv.appendChild(button);
+        }
+        parkingLot.appendChild(spotDiv);
+      });
+    }
+
+    // Book a spot
+    function bookSpot(id) {
+      fetch('http://localhost:3000/api/book/' + id, { method: 'POST' })
+        .then(() => console.log('Booked!'))
+        .catch(err => console.error('Error:', err));
+    }
+
+    // Load initial spots
+    fetch('http://localhost:3000/api/spots')
+      .then(res => res.json())
+      .then(renderSpots)
+      .catch(err => console.error('Error loading spots:', err));
+
+    // Listen for live updates
+    socket.on('update', (spots) => {
+      renderSpots(spots);
+    });
+  </script>
+</body>
+</html>
